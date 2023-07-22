@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import pika
 import json
 import freecurrencyapi
+import requests
 
 def is_json(myjson):
     try:
@@ -51,13 +52,25 @@ def main():
         """
         Returns the historical exchange rates for a given time range
         """
-        #TODO: make api call directly so date range works correctly
-        return client.historical(start_date, base, target)
+        url = 'https://api.freecurrencyapi.com/v1/historical'
+        response = requests.get(url, {'apikey': APIkeys.API_key,
+                                      'date_from': start_date,
+                                      'date_to': end_date,
+                                      'base_currency': base,
+                                      'currencies': target})
+        content = json.loads(response.content)
+        return content
 
     def currency_validation(list_curr):
-        for request_curr in list_curr:
-            if request_curr not in valid_currencies:
+        if list_curr is None:
+            return True
+        elif isinstance(list_curr, str):
+            if list_curr not in valid_currencies:
                 return False
+        else:
+            for request_curr in list_curr:
+                if request_curr not in valid_currencies:
+                    return False
         return True
 
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
