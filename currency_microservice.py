@@ -5,9 +5,16 @@ import pika
 import json
 import freecurrencyapi
 
+def is_json(myjson):
+    try:
+        json.loads(myjson)
+    except ValueError as e:
+        return False
+    return True
+
 def main():
 
-    # Get API Key
+    # Get API Key from .env file
     load_dotenv(find_dotenv())
     @dataclass(frozen=True)
     class APIkeys:
@@ -19,25 +26,39 @@ def main():
                         'CNY','HKD','IDR','IDR','ILS','INR','KRW','MXN','MYR','NZD',
                         'PHP','SGD','THB','ZAR']
 
+    # Initialize freecurrencyapi client
     client = freecurrencyapi.Client(APIkeys.API_key)
 
     def get_status():
+        """
+        Returns the status from Freecurrency API listing the api call quotas
+        """
         return client.status()
 
     def get_currencies(list_curr):
+        """
+        Returns the currency information from Freecurrency API for requested currencies
+        """
         return client.currencies(list_curr)
 
     def get_latest(base, target):
+        """
+        Returns the latest exchange rates for given currencies
+        """
         return client.latest(base, target)
 
     def get_historical(base, target, start_date, end_date):
+        """
+        Returns the historical exchange rates for a given time range
+        """
+        #TODO: make api call directly so date range works correctly
         return client.historical(start_date, base, target)
 
-    def validation(list_curr):
-        # Still need to implement validation
-        # if request_currency not in valid_currencies:
-        # raise Exception("Invalid Currency Request")
-        return None
+    def currency_validation(list_curr):
+        for request_curr in list_curr:
+            if request_curr not in valid_currencies:
+                return False
+        return True
 
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
     channel = connection.channel()
@@ -45,28 +66,44 @@ def main():
     channel.queue_declare(queue='response')
 
     def callback(channel, method, props, body):
+        if not is_json(body):
+            response = {'Error': 'Invalid Request'}
+            channel.basic_publish(exchange='', routing_key='response', body=json.dumps(response))
+            return
+
         message = json.loads(body)
         print(message)
+
         if message.get('type') == 'status':
             response = get_status()
         elif message.get('type') == 'currencies':
-            response = get_currencies(message.get('currencies'))
+            if not currency_validation(message.get('currencies')):
+                response = {'Error': 'Invalid Currency Requested'}
+            else:
+                response = get_currencies(message.get('currencies'))
         elif message.get('type') == 'latest':
-            response = get_latest(message.get('base'), message.get('target'))
+            if (not currency_validation(message.get('base'))) or not (currency_validation(message.get('target'))):
+                response = {'Error': 'Invalid Currency Requested'}
+            else:
+                response = get_latest(message.get('base'), message.get('target'))
         elif message.get('type') == 'historical':
-            response = get_historical(message.get('base'),
-                                      message.get('target'),
-                                      message.get('start_date'),
-                                      message.get('end_date'))
+            if (not currency_validation(message.get('base'))) or (not currency_validation(message.get('target'))):
+                response = {'Error': 'Invalid Currency Requested'}
+            else:
+                response = get_historical(message.get('base'),
+                                          message.get('target'),
+                                          message.get('start_date'),
+                                          message.get('end_date'))
         else:
-            print('Invalid request')
-            return
+            response = {'Error': 'Request not processed'}
+
         channel.basic_publish(exchange='', routing_key='response', body=json.dumps(response))
 
     channel.basic_consume(queue='request',auto_ack=True,on_message_callback=callback)
     print('[*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
     connection.close()
+
 
 if __name__ == '__main__':
     try:
