@@ -33,9 +33,14 @@ def main():
     def get_historical(base, target, start_date, end_date):
         return client.historical(start_date, base, target)
 
+    def validation(list_curr):
+        # Still need to implement validation
+        # if request_currency not in valid_currencies:
+        # raise Exception("Invalid Currency Request")
+        return None
+
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
     channel = connection.channel()
-    #channel.queue_declare(queue='rpc_queue')
     channel.queue_declare(queue='request')
     channel.queue_declare(queue='response')
 
@@ -57,11 +62,7 @@ def main():
             print('Invalid request')
             return
         channel.basic_publish(exchange='', routing_key='response', body=json.dumps(response))
-        #channel.basic_publish(exchange='', routing_key=props.reply_to, properties=pika.BasicProperties(correlation_id=props.correlation_id), body=json.dumps(response))
-        #channel.basic_ack(delivery_tag=method.delivery_tag)
 
-   # channel.basic_qos(prefetch_count=1)
-    #channel.basic_consume(queue='rpc_queue', on_message_callback=callback)
     channel.basic_consume(queue='request',auto_ack=True,on_message_callback=callback)
     print('[*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
@@ -73,30 +74,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('Interrupted')
 
-#if request_currency not in valid_currencies:
-    #raise Exception("Invalid Currency Request")
 
-#Get data from pipe
-    #desired request (latest, specific currencies, or historical)
-    #base_currency  # default to USD if none provided
-    #target_currency
-    # perform data validation
-    # pick appropriate request
-    # make appropriate request
-    # send result data back through pipe
-
-#def get_latest(base_curr='USD', target_curr):
-
-
-
-#print(client.status())
-
-#result =
-#print(result)
-
-#latest_data = client.latest()
-#print(latest_data)
-
-#r2 = client.historical('2022-02-02')
-#print(r2)
 
