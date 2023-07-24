@@ -11,23 +11,41 @@ from datetime import date, datetime
 def is_json(myjson):
     try:
         json.loads(myjson)
-    except ValueError as e:
+    except ValueError:
         return False
     return True
 
 
+def currency_validation(list_curr):
+    """
+    Checks if requested currency(s) is in valid currency list
+    """
+    # Valid Currency List
+    valid_currencies = ['EUR', 'USD', 'JPY', 'BGN', 'CZK', 'DKK', 'GBP', 'HUF', 'PLN', 'RON',
+                        'SEK', 'CHF', 'ISK', 'NOK', 'HRK', 'RUB', 'TRY', 'AUD', 'BRL', 'CAD',
+                        'CNY', 'HKD', 'IDR', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD',
+                        'PHP', 'SGD', 'THB', 'ZAR']
+    # If blank
+    if list_curr is None:
+        return True
+
+    # If single currency provided
+    elif isinstance(list_curr, str):
+        if list_curr not in valid_currencies:
+            return False
+
+    else:
+        for request_curr in list_curr:
+            if request_curr not in valid_currencies:
+                return False
+    return True
+
 def main():
     # Get API Key from .env file
-    load_dotenv(find_dotenv())
-    @dataclass(frozen=True)
+    @dataclass(frozen=True)  # decorator makes keys immutable
     class APIkeys:
+        load_dotenv(find_dotenv())
         API_key: str = os.getenv('API_key')
-
-    # Input Validation List
-    valid_currencies = ['EUR','USD','JPY','BGN','CZK','DKK','GBP','HUF','PLN','RON',
-                        'SEK','CHF','ISK','NOK','HRK','RUB','TRY','AUD','BRL','CAD',
-                        'CNY','HKD','IDR','IDR','ILS','INR','KRW','MXN','MYR','NZD',
-                        'PHP','SGD','THB','ZAR']
 
     # Initialize freecurrencyapi client
     client = freecurrencyapi.Client(APIkeys.API_key)
@@ -71,18 +89,6 @@ def main():
         content = json.loads(response.content)
         return content
 
-    def currency_validation(list_curr):
-        if list_curr is None:
-            return True
-        elif isinstance(list_curr, str):
-            if list_curr not in valid_currencies:
-                return False
-        else:
-            for request_curr in list_curr:
-                if request_curr not in valid_currencies:
-                    return False
-        return True
-
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
     channel = connection.channel()
     channel.queue_declare(queue='request')
@@ -91,7 +97,9 @@ def main():
     def callback(channel, method, props, body):
         if not is_json(body):
             response = {'Error': 'Invalid Request'}
-            channel.basic_publish(exchange='', routing_key='response', body=json.dumps(response))
+            channel.basic_publish(exchange='',
+                                  routing_key='response',
+                                  body=json.dumps(response))
             return
 
         message = json.loads(body)
@@ -99,18 +107,24 @@ def main():
 
         if message.get('type') == 'status':
             response = get_status()
+
         elif message.get('type') == 'currencies':
             if not currency_validation(message.get('currencies')):
                 response = {'Error': 'Invalid Currency Requested'}
             else:
                 response = get_currencies(message.get('currencies'))
+
         elif message.get('type') == 'latest':
-            if (not currency_validation(message.get('base'))) or not (currency_validation(message.get('target'))):
+            if not currency_validation(message.get('base')) or \
+                    not currency_validation(message.get('target')):
                 response = {'Error': 'Invalid Currency Requested'}
             else:
-                response = get_latest(message.get('base'), message.get('target'))
+                response = get_latest(message.get('base'),
+                                      message.get('target'))
+
         elif message.get('type') == 'historical':
-            if (not currency_validation(message.get('base'))) or (not currency_validation(message.get('target'))):
+            if not currency_validation(message.get('base')) or \
+                    not currency_validation(message.get('target')):
                 response = {'Error': 'Invalid Currency Requested'}
             else:
                 response = get_historical(message.get('base'),
@@ -120,10 +134,14 @@ def main():
         else:
             response = {'Error': 'Request not processed'}
 
-        channel.basic_publish(exchange='', routing_key='response', body=json.dumps(response))
+        channel.basic_publish(exchange='',
+                              routing_key='response',
+                              body=json.dumps(response))
 
-    channel.basic_consume(queue='request',auto_ack=True,on_message_callback=callback)
-    print('[*] Waiting for messages. To exit press CTRL+C')
+    channel.basic_consume(queue='request',
+                          auto_ack=True,
+                          on_message_callback=callback)
+    print('Waiting for messages...')
     channel.start_consuming()
     connection.close()
 
@@ -133,6 +151,3 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print('Interrupted')
-
-
-
