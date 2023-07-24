@@ -1,7 +1,19 @@
 # Currency-Microservice
+Dependencies:
+- os
+- sys
+- dotenv
+- dataclasses
+- pika
+- json
+- freecurrencyapi
+- requests
+- datetime
 
 ## Request Format:
-JSON format for all requests
+- JSON format for all requests
+- RabbitMQ queue name for requests to the microservice is 'request'
+- RabbitMQ queue name for responses from the microservice is 'response'
 
 ### Status Request
 {“type”: “status”}

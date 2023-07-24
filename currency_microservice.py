@@ -40,6 +40,7 @@ def currency_validation(list_curr):
                 return False
     return True
 
+
 def main():
     # Get API Key from .env file
     @dataclass(frozen=True)  # decorator makes keys immutable
