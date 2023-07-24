@@ -1,4 +1,4 @@
-import os
+import os, sys
 from dotenv import load_dotenv, find_dotenv
 from dataclasses import dataclass
 import pika
@@ -141,7 +141,7 @@ def main():
     channel.basic_consume(queue='request',
                           auto_ack=True,
                           on_message_callback=callback)
-    print('Waiting for messages...')
+    print('Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
     connection.close()
 
@@ -151,3 +151,7 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print('Interrupted')
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
