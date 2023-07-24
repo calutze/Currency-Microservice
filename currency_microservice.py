@@ -5,6 +5,8 @@ import pika
 import json
 import freecurrencyapi
 import requests
+from datetime import date, datetime
+
 
 def is_json(myjson):
     try:
@@ -13,8 +15,8 @@ def is_json(myjson):
         return False
     return True
 
-def main():
 
+def main():
     # Get API Key from .env file
     load_dotenv(find_dotenv())
     @dataclass(frozen=True)
@@ -52,6 +54,14 @@ def main():
         """
         Returns the historical exchange rates for a given time range
         """
+        # Confirm dates are within 366 days max of each other
+        start_datetime = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_datetime = datetime.strptime(end_date, '%Y-%m-%d').date()
+        delta = end_datetime - start_datetime
+        if delta.days > 366:
+            response = {'Error': 'Invalid Date Range, must be less than 366 days apart'}
+            return response
+
         url = 'https://api.freecurrencyapi.com/v1/historical'
         response = requests.get(url, {'apikey': APIkeys.API_key,
                                       'date_from': start_date,
