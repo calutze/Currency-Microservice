@@ -46,6 +46,17 @@ request = {“type”: “historical”, “base”: “USD”, “target”: [�
 - target can be left blank (None), defaults to all currencies
 
 ## Response Format
-The microservice sends a b
+Sample Response Code:
+```
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+channel.queue_declare(queue='response')
+def callback(ch, method, properties, body):
+    j_message = json.loads(body)
+    print(" [x] Received %r" % j_message)
+channel.basic_consume(queue='response', auto_ack=True, on_message_callback=callback)
+channel.start_consuming()
+```
 - RabbitMQ queue name for responses from the microservice is 'response'
+- Message needs to be converted into python dictionary object with json.loads() after receiving
 
