@@ -60,3 +60,5 @@ channel.start_consuming()
 - RabbitMQ queue name for responses from the microservice is 'response'
 - Message needs to be converted into python dictionary object with json.loads() after receiving
 
+## Sequence Diagram 
+![](CurrencyMicroserviceSequenceDiagram.png)
