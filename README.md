@@ -11,9 +11,18 @@ Dependencies:
 - datetime
 
 ## Request Format:
+Sample Request:
+`connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+channel = connection.channel()
+channel.queue_declare(queue='request')
+latest_request = {"type": "latest", "base": "USD", target": ["CAD", "EUR"]}
+message = json.dumps(latest_request)
+channel.basic_publish(exchange='',
+                      routing_key='request',
+                      body=message)`
 - JSON format for all requests
 - RabbitMQ queue name for requests to the microservice is 'request'
-- RabbitMQ queue name for responses from the microservice is 'response'
+
 
 ### Status Request
 {“type”: “status”}
@@ -33,4 +42,8 @@ request = {“type”: “historical”, “base”: “USD”, “target”: [�
 - date format is YYYY-MM-DD
 - base can be left blank (None), defaults to USD
 - target can be left blank (None), defaults to all currencies
+
+## Response Format
+The microservice sends a b
+- RabbitMQ queue name for responses from the microservice is 'response'
 
