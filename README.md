@@ -12,14 +12,16 @@ Dependencies:
 
 ## Request Format:
 Sample Request:
-`connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+```
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 channel.queue_declare(queue='request')
 latest_request = {"type": "latest", "base": "USD", target": ["CAD", "EUR"]}
 message = json.dumps(latest_request)
 channel.basic_publish(exchange='',
                       routing_key='request',
-                      body=message)`
+                      body=message)
+```
 - JSON format for all requests
 - RabbitMQ queue name for requests to the microservice is 'request'
 
