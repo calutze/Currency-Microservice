@@ -33,20 +33,20 @@ channel.basic_publish(exchange='',
 ### Status Request
 Example Request:
 ```
-message = {“type”: “status”}
+message = {"type": “status"}
 ```
 
 ### Currencies Request
 Example Request:
 ```
-message = {“type”: “currencies”, “currencies”: [“EUR”, “USD”, “CAD”]}
+message = {"type": "currencies", "currencies": ["EUR", "USD", "CAD"]}
 ```
 - "currencies" parameter is a list of currencies. Can be left blank (None), defaults to all currencies
 
 ### Latest Request
 Example Request:
 ```
-message = {“type”: “latest”, “base”: “USD”, “target”: [“CAD”, “EUR”]}
+message = {"type": "latest", "base": "USD", "target": ["CAD", "EUR"]}
 ```
 - base can be left blank (None), defaults to USD
 - target can be left blank (None), defaults to all currencies
@@ -54,7 +54,7 @@ message = {“type”: “latest”, “base”: “USD”, “target”: [“CA
 ### Historical Request
 Example Request:
 ```
-message = {“type”: “historical”, “base”: “USD”, “target”: [“CAD”, “EUR”], “start_date”: “2022-02-02”, “end_date”: “2023-07-04”}
+message = {"type": "historical", "base": "USD", "target": ["CAD", "EUR"], "start_date": "2022-02-02", "end_date": "2023-07-04"}
 ```
 - start_date and end_date must be within 366 days of each other
 - date format is YYYY-MM-DD
@@ -62,14 +62,14 @@ message = {“type”: “historical”, “base”: “USD”, “target”: [�
 - target can be left blank (None), defaults to all currencies
 
 ## Response Format
+To communicate back from microservice to the requesting program, RabbitMQ is used with the queue name 'response'
 Sample Response Code:
 ```
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
-channel.queue_declare(queue='response')
+channel.queue_declare(queue='response')                                                                                        ```
 def callback(ch, method, properties, body):
-    j_message = json.loads(body)
-    print(" [x] Received %r" % j_message)
+    message = json.loads(body)      # message contains the requested data
 channel.basic_consume(queue='response', auto_ack=True, on_message_callback=callback)
 channel.start_consuming()
 ```
